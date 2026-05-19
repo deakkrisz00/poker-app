@@ -1,0 +1,1679 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Poker Tracker V4</title>
+
+<style>
+:root {
+  --bg: #0e0e0f;
+  --surface: #171717;
+  --surface-2: #1f1f1f;
+  --line: #2e2e2e;
+  --accent: #ffb000;
+  --accent-soft: rgba(255, 176, 0, .14);
+  --green: #25c76a;
+  --green-soft: rgba(37, 199, 106, .16);
+  --red: #ff5b4f;
+  --red-soft: rgba(255, 91, 79, .16);
+  --text: #f7f7f7;
+  --muted: #8c8c8c;
+  --shadow: 0 14px 34px rgba(0, 0, 0, .35);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--text);
+  min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(14, 14, 15, .96);
+  border-bottom: 2px solid var(--accent);
+  backdrop-filter: blur(14px);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+h1 {
+  margin: 0;
+  color: var(--accent);
+  font-size: clamp(20px, 6vw, 30px);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  padding: 0 14px 12px;
+}
+
+.tab {
+  flex: 1;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.tab.active {
+  background: var(--accent);
+  color: #070707;
+  border-color: var(--accent);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-bottom: 1px solid var(--line);
+  background: #111;
+}
+
+.stat {
+  min-height: 104px;
+  padding: 16px;
+  border-right: 1px solid var(--line);
+}
+
+.stat:last-child { border-right: 0; }
+
+.stat-label {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+
+.stat-value {
+  margin-top: 8px;
+  font-size: clamp(28px, 8vw, 44px);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.stat-note {
+  margin-top: 6px;
+  color: #626262;
+  font-size: 13px;
+}
+
+.alert {
+  display: none;
+  padding: 13px 16px;
+  background: #260b0b;
+  color: #ff837b;
+  border-bottom: 1px solid #361313;
+  font-weight: 800;
+}
+
+.alert.show { display: block; }
+
+.toolbar {
+  display: grid;
+  grid-template-columns: 1fr 60px;
+  gap: 10px;
+  padding: 18px 14px;
+}
+
+.toolbar input,
+.game-title input {
+  width: 100%;
+  min-height: 54px;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: 14px;
+  color: var(--text);
+  outline: 0;
+  padding: 0 14px;
+  font-size: 18px;
+}
+
+.toolbar input::placeholder,
+.game-title input::placeholder {
+  color: #5c5c5c;
+}
+
+.add-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #050505;
+  font-size: 34px;
+  font-weight: 900;
+  box-shadow: var(--shadow);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  padding: 0 14px 22px;
+}
+
+.player {
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+}
+
+.player.out {
+  background: #150b0b;
+  border-color: #4a1d1d;
+  opacity: .62;
+}
+
+.player.no-buyin {
+  opacity: .72;
+}
+
+.player.no-buyin .player-total {
+  color: var(--muted);
+}
+
+.player.out .player-name {
+  color: #ff8a82;
+  text-decoration: line-through;
+}
+
+.player-head {
+  display: grid;
+  grid-template-columns: 54px 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: #080808;
+  font-weight: 900;
+  font-size: 22px;
+  text-transform: uppercase;
+  overflow: hidden;
+  border: 0;
+  padding: 0;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.player-name {
+  min-width: 0;
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-total {
+  margin-top: 4px;
+  color: var(--accent);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.seat {
+  min-width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #202020;
+  color: var(--accent);
+  font-weight: 900;
+}
+
+.paid-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.pill {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-weight: 900;
+  background: var(--red-soft);
+  color: var(--red);
+  border: 1px solid rgba(255, 91, 79, .45);
+}
+
+.pill.paid {
+  background: var(--green-soft);
+  color: var(--green);
+  border-color: rgba(37, 199, 106, .45);
+}
+
+.pill.buyin {
+  background: #2e2304;
+  color: var(--accent);
+  border-color: rgba(255, 176, 0, .45);
+}
+
+.pill.buyin.active {
+  background: var(--accent);
+  color: #070707;
+}
+
+.money-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.money {
+  min-width: 0;
+  background: var(--surface-2);
+  border-radius: 9px;
+  padding: 10px;
+}
+
+.money small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: .7px;
+  text-transform: uppercase;
+}
+
+.money strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 19px;
+}
+
+.rebuy-row {
+  display: grid;
+  grid-template-columns: 1fr 48px 42px 48px;
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.round-btn {
+  min-height: 46px;
+  border-radius: 11px;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.minus { background: #3a0d0d; color: var(--red); }
+.plus { background: #073512; color: var(--green); }
+.rebuy-count {
+  text-align: center;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.card-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 44px;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.player.out .card-actions {
+  grid-template-columns: 1fr 44px;
+}
+
+.player.no-buyin .card-actions {
+  grid-template-columns: 1fr;
+}
+
+.out-btn {
+  background: #3a0d0d;
+  color: #ff837b;
+  font-weight: 900;
+}
+
+.out-btn.back {
+  background: var(--green-soft);
+  border: 1px solid rgba(37, 199, 106, .6);
+  color: var(--green);
+}
+
+.winner-btn {
+  background: #2e2304;
+  color: var(--accent);
+  border: 1px solid rgba(255, 176, 0, .4);
+  font-weight: 900;
+}
+
+.winner-btn.active {
+  background: var(--accent);
+  color: #070707;
+}
+
+.delete-btn {
+  background: #242424;
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.footer-actions,
+.history-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 0 14px 24px;
+}
+
+.primary {
+  background: var(--accent);
+  color: #070707;
+  font-weight: 900;
+}
+
+.danger {
+  background: #3a0d0d;
+  color: #ff837b;
+  font-weight: 900;
+}
+
+.empty {
+  color: var(--muted);
+  text-align: center;
+  padding: 34px 18px;
+}
+
+.history-view {
+  display: none;
+  padding-bottom: 20px;
+}
+
+.game-title {
+  padding: 16px 14px 6px;
+}
+
+.history-list {
+  display: grid;
+  gap: 12px;
+  padding: 10px 14px 18px;
+}
+
+.history-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.history-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.history-head strong {
+  display: block;
+  font-size: 18px;
+}
+
+.history-head span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.history-pot {
+  color: var(--accent);
+  font-size: 22px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.history-winner {
+  padding: 12px 14px;
+  background: var(--accent-soft);
+  border-bottom: 1px solid rgba(255, 176, 0, .25);
+  color: var(--accent);
+  font-weight: 900;
+}
+
+.history-players {
+  padding: 6px 14px 14px;
+}
+
+.history-player {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid #252525;
+}
+
+.history-player:last-child { border-bottom: 0; }
+
+.history-player small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+.profit {
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.profit.plus { color: var(--green); }
+.profit.minus { color: var(--red); }
+
+.stats-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.stats-name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.stats-name strong {
+  font-size: 20px;
+  text-transform: uppercase;
+}
+
+.export-box {
+  display: none;
+  padding: 0 14px 18px;
+}
+
+.export-box.show {
+  display: block;
+}
+
+.export-box textarea {
+  width: 100%;
+  min-height: 220px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 12px;
+  font: 13px Consolas, monospace;
+}
+
+.export-title {
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-weight: 900;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, .72);
+}
+
+.modal.show {
+  display: flex;
+}
+
+.modal-panel {
+  width: min(460px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+.modal-panel h2 {
+  margin: 0 0 6px;
+  color: var(--accent);
+  font-size: 22px;
+}
+
+.modal-panel p {
+  margin: 0 0 14px;
+  color: var(--muted);
+}
+
+.payout-list {
+  display: grid;
+  gap: 10px;
+}
+
+.payout-row {
+  display: grid;
+  grid-template-columns: 1fr 130px;
+  gap: 10px;
+  align-items: center;
+}
+
+.payout-row label {
+  font-weight: 900;
+}
+
+.payout-row input {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  padding: 0 10px;
+}
+
+.modal-total {
+  margin-top: 12px;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.status-paid { color: var(--green); font-weight: 900; }
+.status-unpaid { color: var(--red); font-weight: 900; }
+
+.hidden { display: none; }
+
+@media (max-width: 900px) {
+  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .app { max-width: none; }
+
+  .brand { padding: 10px 12px; }
+
+  h1 { font-size: 20px; letter-spacing: 1.2px; }
+
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stat {
+    min-height: 88px;
+    padding: 13px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .stat:nth-child(2n) { border-right: 0; }
+  .stat:nth-last-child(-n+2) { border-bottom: 0; }
+
+  .stat-value { font-size: 32px; }
+
+  .toolbar {
+    grid-template-columns: 1fr 56px;
+    padding: 14px 10px;
+  }
+
+  .toolbar input,
+  .game-title input {
+    min-height: 56px;
+    font-size: 17px;
+  }
+
+  .add-btn {
+    width: 56px;
+    height: 56px;
+  }
+
+  .cards {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 0 10px 18px;
+  }
+
+  .player {
+    border-radius: 13px;
+    padding: 14px;
+  }
+
+  .player-head {
+    grid-template-columns: 50px 1fr auto;
+  }
+
+  .avatar {
+    width: 50px;
+    height: 50px;
+  }
+
+  .player-name {
+    font-size: 20px;
+  }
+
+  .money-grid {
+    gap: 7px;
+  }
+
+  .money {
+    padding: 9px;
+  }
+
+  .money strong {
+    font-size: 17px;
+  }
+
+  .footer-actions,
+  .history-actions {
+    grid-template-columns: 1fr;
+    padding: 0 10px 22px;
+  }
+
+  .history-list,
+  .game-title {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <h1>♠ Poker Tracker V4</h1>
+    </div>
+    <div class="tabs">
+      <button class="tab active" id="currentTab" data-action="show-current">Aktuális parti</button>
+      <button class="tab" id="historyTab" data-action="show-history">Lejátszott partik</button>
+      <button class="tab" id="statsTab" data-action="show-stats">Statisztika</button>
+    </div>
+  </header>
+
+  <main id="currentView">
+    <section class="stats" aria-label="Aktuális parti statisztika">
+      <div class="stat">
+        <div class="stat-label">Játékosok</div>
+        <div class="stat-value" id="count">0</div>
+        <div class="stat-note">aktív</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Prize pool</div>
+        <div class="stat-value" id="pot">0 lej</div>
+        <div class="stat-note">összes bent</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Összes rebuy</div>
+        <div class="stat-value" id="rebuy">0</div>
+        <div class="stat-note">rebuy</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Nem fizetett</div>
+        <div class="stat-value" id="unpaid">0</div>
+        <div class="stat-note">játékos</div>
+      </div>
+    </section>
+
+    <div class="alert" id="unpaidAlert"></div>
+    <div class="alert" id="errorAlert"></div>
+
+    <section class="game-title">
+      <input id="gameName" placeholder="Parti">
+    </section>
+
+    <section class="toolbar">
+      <input id="name" placeholder="Játékos">
+      <button class="add-btn" data-action="add-player" aria-label="Játékos hozzáadása">+</button>
+    </section>
+
+    <section class="cards" id="list"></section>
+
+    <div class="empty hidden" id="emptyCurrent">
+      Adj hozzá játékosokat, és indulhat a parti.
+    </div>
+
+    <section class="footer-actions">
+      <button class="primary" data-action="finish-game">Parti lezárása és mentése</button>
+      <button class="danger" data-action="reset-current">Aktuális parti törlése</button>
+    </section>
+  </main>
+
+  <main class="history-view" id="historyView">
+    <section class="history-list" id="historyList"></section>
+    <div class="empty hidden" id="emptyHistory">
+      Még nincs lezárt parti. Ha befejeztetek egy játékot, mentsd el a “Parti lezárása” gombbal.
+    </div>
+    <section class="history-actions">
+      <button class="primary" data-action="export-json">Export JSON</button>
+      <button class="primary" data-action="export-csv">Export CSV</button>
+      <button class="danger" data-action="clear-history">Összes előzmény törlése</button>
+      <button class="primary" data-action="show-current">Vissza az aktuális partihoz</button>
+    </section>
+    <section class="export-box" id="exportBox">
+      <div class="export-title" id="exportTitle">Export elkészült</div>
+      <textarea id="exportText" readonly></textarea>
+    </section>
+  </main>
+
+  <main class="history-view" id="statsView">
+    <section class="history-list" id="statsList"></section>
+    <div class="empty hidden" id="emptyStats">
+      Még nincs statisztika. Zárj le legalább egy partit, és itt megjelenik az összesített eredmény.
+    </div>
+  </main>
+  <section class="modal" id="payoutModal" aria-hidden="true">
+    <div class="modal-panel">
+      <h2>Split pot</h2>
+      <p id="payoutHelp">Írd be, ki mennyit vitt haza a saját belépőjével együtt.</p>
+      <div class="payout-list" id="payoutList"></div>
+      <div class="modal-total" id="payoutTotal"></div>
+      <div class="modal-actions">
+        <button class="danger" data-action="cancel-payout">Mégse</button>
+        <button class="primary" data-action="save-payout">Parti mentése</button>
+      </div>
+    </div>
+  </section>
+  <input id="photoInput" type="file" accept="image/*" hidden>
+</div>
+
+<script>
+const BUYIN = 10;
+const COLORS = ["#e91e63", "#2ecc71", "#f58b1f", "#9b59b6", "#ffb000", "#1abc9c", "#3498db", "#e74c3c"];
+const memoryStore = {};
+
+window.addEventListener("error", event => {
+  const box = document.getElementById("errorAlert");
+  if(!box) return;
+  box.textContent = "Hiba az appban: " + event.message;
+  box.classList.add("show");
+});
+
+function storageGet(key){
+  try {
+    const value = localStorage.getItem(key);
+    return value === null ? memoryStore[key] || null : value;
+  } catch (error) {
+    return memoryStore[key] || null;
+  }
+}
+
+function storageSet(key, value){
+  memoryStore[key] = value;
+  try {
+    localStorage.setItem(key, value);
+  } catch (error) {
+    console.warn("A böngésző nem engedi a tartós mentést:", error);
+  }
+}
+
+function storageRemove(key){
+  delete memoryStore[key];
+  try {
+    localStorage.removeItem(key);
+  } catch (error) {
+    console.warn("A böngésző nem engedi a mentés törlését:", error);
+  }
+}
+
+function loadJson(key, fallback){
+  try {
+    const value = storageGet(key);
+    return value ? JSON.parse(value) : fallback;
+  } catch (error) {
+    console.warn("Hibás mentett adat törölve:", key, error);
+    storageRemove(key);
+    return fallback;
+  }
+}
+
+let players = loadJson("pokerPlayersV4", loadJson("players", []));
+let history = loadJson("pokerHistoryV4", []);
+let gameName = storageGet("pokerGameNameV4") || "";
+let winnerIds = loadJson("pokerWinnerIdsV4", []);
+let photoPlayerId = null;
+let pendingFinish = null;
+const oldWinnerId = Number(storageGet("pokerWinnerIdV4")) || null;
+if(!Array.isArray(winnerIds)) winnerIds = [];
+if(!winnerIds.length && oldWinnerId) winnerIds = [oldWinnerId];
+
+players = Array.isArray(players) ? players.map((player, index) => ({
+  id: Number(player.id) || Date.now() + index,
+  name: String(player.name || "").trim() || "Játékos",
+  buyins: Math.max(0, Number(player.buyins == null ? 1 : player.buyins) || 0),
+  paid: Boolean(player.paid),
+  rebuys: Math.max(0, Number(player.rebuys) || 0),
+  out: Boolean(player.out),
+  eliminatedOrder: Math.max(0, Number(player.eliminatedOrder) || 0),
+  photo: player.photo || "",
+  color: player.color || COLORS[index % COLORS.length]
+})) : [];
+
+history = Array.isArray(history) ? history : [];
+winnerIds = winnerIds.filter(id => players.some(player => player.id === id && player.buyins > 0 && !player.out));
+
+function save(){
+  storageSet("pokerPlayersV4", JSON.stringify(players));
+  storageSet("pokerWinnerIdsV4", JSON.stringify(winnerIds));
+  storageSet("pokerWinnerIdV4", winnerIds[0] ? String(winnerIds[0]) : "");
+  render();
+}
+
+function saveHistory(){
+  storageSet("pokerHistoryV4", JSON.stringify(history));
+  renderHistory();
+}
+
+function saveGameName(){
+  gameName = document.getElementById("gameName").value.trim();
+  storageSet("pokerGameNameV4", gameName);
+}
+
+function addPlayer(){
+  const input = document.getElementById("name");
+  const name = input.value.trim();
+  if(!name) return;
+
+  players.push({
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    name,
+    buyins: 1,
+    paid: false,
+    rebuys: 0,
+    out: false,
+    eliminatedOrder: 0,
+    photo: "",
+    color: COLORS[players.length % COLORS.length]
+  });
+
+  input.value = "";
+  save();
+  input.focus();
+}
+
+function togglePaid(id){
+  const player = players.find(x => x.id === id);
+  if(!player || player.buyins < 1) return;
+  player.paid = !player.paid;
+  save();
+}
+
+function changeRebuy(id, amount){
+  const player = players.find(x => x.id === id);
+  if(!player || player.buyins < 1) return;
+  player.rebuys = Math.max(0, player.rebuys + amount);
+  save();
+}
+
+function toggleBuyin(id){
+  const player = players.find(x => x.id === id);
+  if(!player) return;
+  if(player.buyins > 0){
+    player.buyins = 0;
+    player.paid = false;
+    player.rebuys = 0;
+    player.out = false;
+    player.eliminatedOrder = 0;
+    winnerIds = winnerIds.filter(winnerId => winnerId !== id);
+    normalizeEliminations();
+  } else {
+    player.buyins = 1;
+  }
+  save();
+}
+
+function toggleOut(id){
+  const player = players.find(x => x.id === id);
+  if(!player || player.buyins < 1) return;
+  if(player.out){
+    player.out = false;
+    player.eliminatedOrder = 0;
+    normalizeEliminations();
+  } else {
+    player.out = true;
+    player.eliminatedOrder = nextEliminationOrder();
+    winnerIds = winnerIds.filter(winnerId => winnerId !== player.id);
+  }
+  save();
+}
+
+function setWinner(id){
+  const player = players.find(x => x.id === id);
+  if(!player || player.out || player.buyins < 1) return;
+  winnerIds = winnerIds.includes(id)
+    ? winnerIds.filter(winnerId => winnerId !== id)
+    : [...winnerIds, id];
+  save();
+}
+
+function deletePlayer(id){
+  const player = players.find(x => x.id === id);
+  if(!player) return;
+  if(confirm(player.name + " törlése?")){
+    winnerIds = winnerIds.filter(winnerId => winnerId !== id);
+    players = players.filter(x => x.id !== id);
+    normalizeEliminations();
+    save();
+  }
+}
+
+function choosePhoto(id){
+  const player = players.find(x => x.id === id);
+  if(!player) return;
+  photoPlayerId = id;
+  document.getElementById("photoInput").click();
+}
+
+function savePhoto(file){
+  if(!file || !photoPlayerId) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const image = new Image();
+    image.onload = () => {
+      const size = 240;
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      const sourceSize = Math.min(image.width, image.height);
+      const sourceX = (image.width - sourceSize) / 2;
+      const sourceY = (image.height - sourceSize) / 2;
+      canvas.width = size;
+      canvas.height = size;
+      context.drawImage(image, sourceX, sourceY, sourceSize, sourceSize, 0, 0, size, size);
+      const player = players.find(x => x.id === photoPlayerId);
+      if(player){
+        player.photo = canvas.toDataURL("image/jpeg", .82);
+        save();
+      }
+      photoPlayerId = null;
+      document.getElementById("photoInput").value = "";
+    };
+    image.src = String(reader.result || "");
+  };
+  reader.readAsDataURL(file);
+}
+
+function playerTotal(player){
+  return player.buyins * BUYIN + player.rebuys * BUYIN;
+}
+
+function nextEliminationOrder(){
+  return players
+    .filter(player => player.buyins > 0)
+    .reduce((max, player) => Math.max(max, player.eliminatedOrder || 0), 0) + 1;
+}
+
+function normalizeEliminations(){
+  players
+    .filter(player => player.buyins > 0 && player.out)
+    .sort((a, b) => (a.eliminatedOrder || 0) - (b.eliminatedOrder || 0))
+    .forEach((player, index) => {
+      player.eliminatedOrder = index + 1;
+    });
+}
+
+function placement(player, totalPlayers){
+  if(player.winner) return 1;
+  if(player.out && player.eliminatedOrder) return totalPlayers - player.eliminatedOrder + 1;
+  return "";
+}
+
+function sortedCurrentPlayers(){
+  return [...players].sort((a, b) => {
+    if((a.buyins > 0) !== (b.buyins > 0)) return a.buyins > 0 ? -1 : 1;
+    if(a.out !== b.out) return a.out ? 1 : -1;
+    if(a.out && b.out) return (b.eliminatedOrder || 0) - (a.eliminatedOrder || 0);
+    return players.indexOf(a) - players.indexOf(b);
+  });
+}
+
+function resetPlayerForNextGame(player){
+  return {
+    ...player,
+    buyins: 0,
+    paid: false,
+    rebuys: 0,
+    out: false,
+    eliminatedOrder: 0
+  };
+}
+
+function initials(name){
+  return name.trim().charAt(0) || "?";
+}
+
+function escapeHtml(value){
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function render(){
+  const list = document.getElementById("list");
+  const emptyCurrent = document.getElementById("emptyCurrent");
+  const alert = document.getElementById("unpaidAlert");
+  list.innerHTML = "";
+
+  let pot = 0;
+  let rebuyTotal = 0;
+  const gamePlayers = players.filter(p => p.buyins > 0);
+  const unpaidPlayers = gamePlayers.filter(p => !p.paid);
+  const activePlayers = gamePlayers.filter(p => !p.out);
+  const effectiveWinnerIds = winnerIds.length
+    ? winnerIds
+    : (activePlayers.length === 1 ? [activePlayers[0].id] : []);
+  const displayPlayers = sortedCurrentPlayers();
+
+  displayPlayers.forEach((player, index) => {
+    const total = playerTotal(player);
+    pot += total;
+    rebuyTotal += player.rebuys;
+    const place = player.out && player.eliminatedOrder
+      ? gamePlayers.length - player.eliminatedOrder + 1
+      : (effectiveWinnerIds.includes(player.id) ? 1 : index + 1);
+
+    const div = document.createElement("article");
+    div.className = "player" + (player.out ? " out" : "") + (player.buyins < 1 ? " no-buyin" : "");
+    div.innerHTML = `
+      <div class="player-head">
+        <button class="avatar" style="background:${player.color || COLORS[index % COLORS.length]}" data-action="choose-photo" data-id="${player.id}" aria-label="${escapeHtml(player.name)} kép választása">
+          ${player.photo ? `<img src="${escapeHtml(player.photo)}" alt="">` : escapeHtml(initials(player.name))}
+        </button>
+        <div>
+          <div class="player-name">${escapeHtml(player.name)}</div>
+          <div class="player-total">${player.buyins > 0 ? total + " lej" : "nincs buy-in"}${player.out && place ? " · " + place + ". hely" : ""}${effectiveWinnerIds.includes(player.id) ? " · nyertes" : ""}</div>
+        </div>
+        <div class="seat">${player.buyins > 0 ? place : "−"}</div>
+      </div>
+
+      <div class="paid-row">
+        <button class="pill buyin ${player.buyins > 0 ? "active" : ""}" data-action="toggle-buyin" data-id="${player.id}">
+          ${player.buyins > 0 ? "Buy-in aktív" : "+ Buy-in"}
+        </button>
+        <button class="pill ${player.paid ? "paid" : ""}" data-action="toggle-paid" data-id="${player.id}">
+          ${player.buyins < 1 ? "Nem játszik" : (player.paid ? "✓ Fizetve" : "✗ Fizetlen")}
+        </button>
+      </div>
+
+      <div class="money-grid">
+        <div class="money"><small>Buy-in</small><strong>${player.buyins}× ${BUYIN} lej</strong></div>
+        <div class="money"><small>Rebuy</small><strong>${player.rebuys}×</strong></div>
+        <div class="money"><small>Összesen</small><strong>${total} lej</strong></div>
+      </div>
+
+      <div class="rebuy-row">
+        <span>Rebuy</span>
+        <button class="round-btn minus" data-action="rebuy-minus" data-id="${player.id}">−</button>
+        <div class="rebuy-count">${player.rebuys}</div>
+        <button class="round-btn plus" data-action="rebuy-plus" data-id="${player.id}">+</button>
+      </div>
+
+      <div class="card-actions">
+        ${player.out || player.buyins < 1 ? "" : `
+          <button class="winner-btn ${effectiveWinnerIds.includes(player.id) ? "active" : ""}" data-action="set-winner" data-id="${player.id}">
+            ${effectiveWinnerIds.includes(player.id) ? "★ Nyertes" : "Nyertes"}
+          </button>
+        `}
+        ${player.buyins < 1 ? "" : `
+          <button class="out-btn ${player.out ? "back" : ""}" data-action="toggle-out" data-id="${player.id}">
+            ${player.out ? "✓ Visszahozás" : "☠ Kiesett"}
+          </button>
+        `}
+        <button class="delete-btn" data-action="delete-player" data-id="${player.id}" aria-label="${escapeHtml(player.name)} törlése">🗑</button>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+
+  document.getElementById("pot").innerText = pot + " lej";
+  document.getElementById("count").innerText = activePlayers.length;
+  document.getElementById("rebuy").innerText = rebuyTotal;
+  document.getElementById("unpaid").innerText = unpaidPlayers.length;
+  emptyCurrent.classList.toggle("hidden", players.length > 0);
+
+  if(unpaidPlayers.length){
+    alert.innerHTML = "⚠ Nem fizetett: <strong>" + unpaidPlayers.map(p => escapeHtml(p.name)).join(", ") + "</strong>";
+    alert.classList.add("show");
+  } else {
+    alert.classList.remove("show");
+  }
+}
+
+function finishGame(){
+  const gamePlayers = players.filter(p => p.buyins > 0);
+  if(!gamePlayers.length) return alert("Nincs menthető parti. Legalább egy játékosnál legyen buy-in.");
+  const unpaidPlayers = gamePlayers.filter(p => !p.paid);
+  const activePlayers = gamePlayers.filter(p => !p.out);
+  if(!activePlayers.length) return alert("Nincs bent maradt játékos. Hozz vissza vagy jelölj ki valakit nyertesnek.");
+
+  let finalWinnerIds = winnerIds.filter(id => gamePlayers.some(player => player.id === id && !player.out));
+  if(!finalWinnerIds.length && activePlayers.length === 1) finalWinnerIds = [activePlayers[0].id];
+  if(!finalWinnerIds.length){
+    return alert("Több játékos is bent van. Jelöld meg a nyertest vagy nyerteseket a játékoskártyán a Nyertes gombbal.");
+  }
+
+  const pot = gamePlayers.reduce((sum, p) => sum + playerTotal(p), 0);
+  const winners = gamePlayers.filter(p => finalWinnerIds.includes(p.id));
+
+  const message = unpaidPlayers.length
+    ? "Van még nem fizetett játékos. Így is lezárod és mented?"
+    : "Lezárod és elmented a partit?";
+
+  if(!confirm(message)) return;
+
+  pendingFinish = { gamePlayers, unpaidPlayers, winners, finalWinnerIds, pot };
+  if(winners.length > 1){
+    showPayoutModal();
+    return;
+  }
+
+  saveFinishedGame([{ id: winners[0].id, name: winners[0].name, winnings: pot }]);
+}
+
+function saveFinishedGame(winnerPayouts){
+  if(!pendingFinish) return;
+  const { gamePlayers, unpaidPlayers, winners, finalWinnerIds, pot } = pendingFinish;
+  const snapshot = {
+    id: Date.now(),
+    name: gameName || "Parti " + (history.length + 1),
+    date: new Date().toISOString(),
+    buyin: BUYIN,
+    pot,
+    rebuys: gamePlayers.reduce((sum, p) => sum + p.rebuys, 0),
+    unpaid: unpaidPlayers.length,
+    winners: winnerPayouts.map(payout => ({
+      name: payout.name,
+      winnings: payout.winnings
+    })),
+    winner: winners.length === 1 ? {
+      name: winners[0].name,
+      winnings: winnerPayouts[0].winnings
+    } : null,
+    players: gamePlayers.map(p => ({
+      name: p.name,
+      buyins: p.buyins,
+      paid: p.paid,
+      rebuys: p.rebuys,
+      out: p.out,
+      eliminatedOrder: p.eliminatedOrder || 0,
+      winner: finalWinnerIds.includes(p.id),
+      placement: finalWinnerIds.includes(p.id) ? 1 : (p.out && p.eliminatedOrder ? gamePlayers.length - p.eliminatedOrder + 1 : 2),
+      total: playerTotal(p),
+      winnings: payoutFor(winnerPayouts, p.id),
+      profit: payoutFor(winnerPayouts, p.id) - playerTotal(p)
+    })).sort((a, b) => {
+      const aPlace = a.placement || 999;
+      const bPlace = b.placement || 999;
+      return aPlace - bPlace;
+    })
+  };
+
+  history.unshift(snapshot);
+  players = players.map(resetPlayerForNextGame);
+  winnerIds = [];
+  gameName = "";
+  document.getElementById("gameName").value = "";
+  storageSet("pokerGameNameV4", "");
+  storageSet("pokerWinnerIdsV4", "[]");
+  storageSet("pokerWinnerIdV4", "");
+  save();
+  saveHistory();
+  showView("history");
+  pendingFinish = null;
+}
+
+function resetCurrent(){
+  if(confirm("Biztos törlöd az aktuális partit? Ez nem kerül az előzmények közé.")){
+    players = players.map(resetPlayerForNextGame);
+    winnerIds = [];
+    save();
+  }
+}
+
+function clearHistory(){
+  if(confirm("Biztos törlöd az összes lejátszott partit?")){
+    history = [];
+    saveHistory();
+    renderStats();
+  }
+}
+
+function deleteHistory(id){
+  if(confirm("Törlöd ezt a mentett partit?")){
+    history = history.filter(game => game.id !== id);
+    saveHistory();
+    renderStats();
+  }
+}
+
+function formatDate(value){
+  return new Date(value).toLocaleString("hu-HU", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function money(value){
+  const rounded = Math.round(Number(value) * 100) / 100;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
+}
+
+function signedMoney(value){
+  const amount = Number(value) || 0;
+  return (amount > 0 ? "+" : "") + money(amount) + " lej";
+}
+
+function playerProfit(player){
+  if(typeof player.profit === "number") return player.profit;
+  return (Number(player.winnings) || 0) - (Number(player.total) || 0);
+}
+
+function showPayoutModal(){
+  if(!pendingFinish) return;
+  const modal = document.getElementById("payoutModal");
+  const list = document.getElementById("payoutList");
+  const total = document.getElementById("payoutTotal");
+  const { winners, pot } = pendingFinish;
+  const defaultAmount = Math.round((pot / winners.length) * 100) / 100;
+
+  list.innerHTML = winners.map((winner, index) => `
+    <div class="payout-row">
+      <label for="payout-${winner.id}">${escapeHtml(winner.name)}</label>
+      <input id="payout-${winner.id}" data-payout-id="${winner.id}" inputmode="decimal" type="number" min="0" step="0.01" value="${money(index === winners.length - 1 ? pot - defaultAmount * (winners.length - 1) : defaultAmount)}">
+    </div>
+  `).join("");
+  total.textContent = "Prize pool: " + money(pot) + " lej";
+  modal.classList.add("show");
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function hidePayoutModal(){
+  document.getElementById("payoutModal").classList.remove("show");
+  document.getElementById("payoutModal").setAttribute("aria-hidden", "true");
+}
+
+function savePayoutModal(){
+  if(!pendingFinish) return;
+  const { winners, pot } = pendingFinish;
+  const inputs = [...document.querySelectorAll("[data-payout-id]")];
+  const payouts = inputs.map(input => {
+    const id = Number(input.dataset.payoutId);
+    const winner = winners.find(player => player.id === id);
+    return {
+      id,
+      name: winner ? winner.name : "",
+      winnings: Number(String(input.value).replace(",", "."))
+    };
+  });
+
+  if(payouts.some(payout => !Number.isFinite(payout.winnings) || payout.winnings < 0)){
+    alert("Minden nyerteshez érvényes összeget írj.");
+    return;
+  }
+
+  const payoutTotal = payouts.reduce((sum, payout) => sum + payout.winnings, 0);
+  if(Math.abs(payoutTotal - pot) > 0.05){
+    alert("A megadott összegek összege legyen pontosan " + money(pot) + " lej. Most: " + money(payoutTotal) + " lej.");
+    return;
+  }
+
+  hidePayoutModal();
+  saveFinishedGame(payouts);
+}
+
+function payoutFor(payouts, playerId){
+  const payout = payouts.find(item => item.id === playerId);
+  return payout ? payout.winnings : 0;
+}
+
+function gameWinners(game){
+  if(Array.isArray(game.winners) && game.winners.length) return game.winners;
+  if(game.winner) return [game.winner];
+  return game.players.filter(player => player.winner).map(player => ({
+    name: player.name,
+    winnings: player.winnings || game.pot
+  }));
+}
+
+function renderHistory(){
+  const list = document.getElementById("historyList");
+  const empty = document.getElementById("emptyHistory");
+  list.innerHTML = "";
+  empty.classList.toggle("hidden", history.length > 0);
+
+  history.forEach(game => {
+    const winners = gameWinners(game);
+    const rankedPlayers = [...game.players].sort((a, b) => {
+      const aPlace = a.placement || 999;
+      const bPlace = b.placement || 999;
+      if(aPlace !== bPlace) return aPlace - bPlace;
+      return playerProfit(b) - playerProfit(a);
+    });
+    const card = document.createElement("article");
+    card.className = "history-card";
+    card.innerHTML = `
+      <div class="history-head">
+        <div>
+          <strong>${escapeHtml(game.name)}</strong>
+          <span>${formatDate(game.date)} · ${game.players.length} játékos · ${game.rebuys} rebuy</span>
+        </div>
+        <div class="history-pot">${money(game.pot)} lej</div>
+      </div>
+      ${winners.length ? `<div class="history-winner">Nyertes: ${winners.map(winner => escapeHtml(winner.name) + " · " + money(winner.winnings || game.pot) + " lej").join(" / ")}</div>` : ""}
+      <div class="history-players">
+        ${rankedPlayers.map(player => `
+          <div class="history-player">
+            <div>
+              <strong>${player.placement ? player.placement + ". " : ""}${escapeHtml(player.name)}${player.winner ? " · nyertes" : ""}${player.out ? " · kiesett" : ""}</strong>
+              <small>Buy-in ${player.buyins || 1}× ${game.buyin} lej · Rebuy ${player.rebuys}× · Befizetés ${money(player.total)} lej${player.winnings ? " · Nyeremény " + money(player.winnings) + " lej" : ""}</small>
+            </div>
+            <div>
+              <div class="profit ${playerProfit(player) >= 0 ? "plus" : "minus"}">${signedMoney(playerProfit(player))}</div>
+              <div class="${player.paid ? "status-paid" : "status-unpaid"}">${player.paid ? "Fizetve" : "Fizetlen"}</div>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+      <div class="history-actions">
+        <button class="danger" data-action="delete-history" data-id="${game.id}">Parti törlése</button>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function buildStats(){
+  const stats = {};
+  history.forEach(game => {
+    game.players.forEach(player => {
+      if(!stats[player.name]){
+        stats[player.name] = {
+          name: player.name,
+          games: 0,
+          paidIn: 0,
+          winnings: 0,
+          profit: 0,
+          wins: 0,
+          rebuys: 0
+        };
+      }
+      const row = stats[player.name];
+      const paidIn = Number(player.total) || 0;
+      const won = Number(player.winnings) || 0;
+      row.games++;
+      row.paidIn += paidIn;
+      row.winnings += won;
+      row.profit += playerProfit(player);
+      row.wins += player.winner ? 1 : 0;
+      row.rebuys += Number(player.rebuys) || 0;
+    });
+  });
+  return Object.values(stats).sort((a, b) => b.profit - a.profit);
+}
+
+function renderStats(){
+  const list = document.getElementById("statsList");
+  const empty = document.getElementById("emptyStats");
+  const stats = buildStats();
+  list.innerHTML = "";
+  empty.classList.toggle("hidden", stats.length > 0);
+
+  stats.forEach((player, index) => {
+    const card = document.createElement("article");
+    card.className = "stats-card";
+    card.innerHTML = `
+      <div class="stats-name">
+        <strong>${index + 1}. ${escapeHtml(player.name)}</strong>
+        <span class="profit ${player.profit >= 0 ? "plus" : "minus"}">${signedMoney(player.profit)}</span>
+      </div>
+      <div class="money-grid">
+        <div class="money"><small>Partik</small><strong>${player.games}</strong></div>
+        <div class="money"><small>Győzelem</small><strong>${player.wins}</strong></div>
+        <div class="money"><small>Rebuy</small><strong>${player.rebuys}×</strong></div>
+        <div class="money"><small>Befizetés</small><strong>${money(player.paidIn)} lej</strong></div>
+        <div class="money"><small>Nyeremény</small><strong>${money(player.winnings)} lej</strong></div>
+        <div class="money"><small>Profit</small><strong>${signedMoney(player.profit)}</strong></div>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function showExportText(content, filename){
+  const box = document.getElementById("exportBox");
+  const title = document.getElementById("exportTitle");
+  const text = document.getElementById("exportText");
+  title.textContent = filename + " elkészült. Ha nem indult letöltés, innen kimásolható.";
+  text.value = content;
+  box.classList.add("show");
+  text.focus();
+  text.select();
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(content).catch(() => {});
+  }
+}
+
+async function downloadFile(filename, content, type){
+  let saved = false;
+  if(window.showSaveFilePicker){
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [{
+          description: type.includes("csv") ? "CSV fájl" : "JSON fájl",
+          accept: { [type.split(";")[0]]: ["." + filename.split(".").pop()] }
+        }]
+      });
+      const writable = await handle.createWritable();
+      await writable.write(content);
+      await writable.close();
+      saved = true;
+    } catch (error) {
+      if(error && error.name === "AbortError") return;
+    }
+  }
+
+  try {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    saved = true;
+  } catch (error) {
+    saved = false;
+  }
+
+  if(!saved || location.protocol === "file:"){
+    showExportText(content, filename);
+  }
+}
+
+function csvCell(value){
+  const text = String(value == null ? "" : value);
+  return '"' + text.replace(/"/g, '""') + '"';
+}
+
+async function exportData(type){
+  const stamp = new Date().toISOString().slice(0, 10);
+  if(type === "json"){
+    await downloadFile(
+      "poker-tracker-" + stamp + ".json",
+      JSON.stringify({ players, history }, null, 2),
+      "application/json;charset=utf-8"
+    );
+    return;
+  }
+
+  const rows = [[
+    "parti",
+    "datum",
+    "játékos",
+    "helyezés",
+    "buyin_db",
+    "rebuy_db",
+    "befizetés",
+    "nyeremény",
+    "profit",
+    "nyertes",
+    "kiesett",
+    "fizetett"
+  ]];
+
+  history.forEach(game => {
+    game.players.forEach(player => {
+      rows.push([
+        game.name,
+        formatDate(game.date),
+        player.name,
+        player.placement || "",
+        player.buyins || 1,
+        player.rebuys || 0,
+        money(player.total || 0),
+        money(player.winnings || 0),
+        money(playerProfit(player)),
+        player.winner ? "igen" : "nem",
+        player.out ? "igen" : "nem",
+        player.paid ? "igen" : "nem"
+      ]);
+    });
+  });
+
+  await downloadFile(
+    "poker-tracker-" + stamp + ".csv",
+    rows.map(row => row.map(csvCell).join(",")).join("\n"),
+    "text/csv;charset=utf-8"
+  );
+}
+
+function showView(view){
+  const isHistory = view === "history";
+  const isStats = view === "stats";
+  document.getElementById("currentView").style.display = isHistory || isStats ? "none" : "block";
+  document.getElementById("historyView").style.display = isHistory ? "block" : "none";
+  document.getElementById("statsView").style.display = isStats ? "block" : "none";
+  document.getElementById("currentTab").classList.toggle("active", !isHistory && !isStats);
+  document.getElementById("historyTab").classList.toggle("active", isHistory);
+  document.getElementById("statsTab").classList.toggle("active", isStats);
+  if(isHistory) renderHistory();
+  if(isStats) renderStats();
+}
+
+function handleAction(action, id){
+  if(action === "show-current") showView("current");
+  if(action === "show-history") showView("history");
+  if(action === "show-stats") showView("stats");
+  if(action === "add-player") addPlayer();
+  if(action === "finish-game") finishGame();
+  if(action === "reset-current") resetCurrent();
+  if(action === "clear-history") clearHistory();
+  if(action === "toggle-buyin") toggleBuyin(id);
+  if(action === "toggle-paid") togglePaid(id);
+  if(action === "rebuy-minus") changeRebuy(id, -1);
+  if(action === "rebuy-plus") changeRebuy(id, 1);
+  if(action === "toggle-out") toggleOut(id);
+  if(action === "set-winner") setWinner(id);
+  if(action === "choose-photo") choosePhoto(id);
+  if(action === "delete-player") deletePlayer(id);
+  if(action === "delete-history") deleteHistory(id);
+  if(action === "export-json") exportData("json").catch(error => alert("Export hiba: " + error.message));
+  if(action === "export-csv") exportData("csv").catch(error => alert("Export hiba: " + error.message));
+  if(action === "cancel-payout"){
+    pendingFinish = null;
+    hidePayoutModal();
+  }
+  if(action === "save-payout") savePayoutModal();
+}
+
+document.addEventListener("click", event => {
+  const button = event.target.closest("[data-action]");
+  if(!button) return;
+  handleAction(button.dataset.action, Number(button.dataset.id));
+});
+
+document.getElementById("name").addEventListener("keydown", event => {
+  if(event.key === "Enter") addPlayer();
+});
+
+document.getElementById("gameName").addEventListener("input", saveGameName);
+document.getElementById("photoInput").addEventListener("change", event => {
+  savePhoto(event.target.files[0]);
+});
+
+document.getElementById("gameName").value = gameName;
+render();
+renderHistory();
+renderStats();
+</script>
+</body>
+</html>
